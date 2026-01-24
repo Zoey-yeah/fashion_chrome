@@ -97,17 +97,29 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-#### 3.3 Configure AI Service (Choose One)
+#### 3.3 Configure AI Service
 
-Create a `.env` file in the `backend` folder:
+**🎉 Good news: The extension works out of the box with NO API key required!**
+
+By default, the extension uses [Kolors Virtual Try-On](https://huggingface.co/spaces/Kwai-Kolors/Kolors-Virtual-Try-On) which is **completely FREE**.
+
+##### Option A: Kolors (Default - FREE!) ⭐ RECOMMENDED
+
+No configuration needed! Kolors is enabled by default.
+
+- **Cost:** FREE
+- **Speed:** ~30-60 seconds (runs on CPU)
+- **Quality:** Good
+
+Just start the server and it works!
+
+##### Option B: Fal.ai (Faster - Paid)
+
+For faster results (~10-15 seconds), create a `.env` file in the `backend` folder:
 
 ```bash
 touch .env  # On Windows: type nul > .env
 ```
-
-Add your API key(s) to the `.env` file:
-
-##### Option A: Fal.ai (Recommended - Fast & Affordable)
 
 ```env
 FAL_KEY=your_fal_api_key_here
@@ -121,7 +133,7 @@ FAL_KEY=your_fal_api_key_here
 
 **Cost:** ~$0.01-0.02 per image
 
-##### Option B: Replicate (Best Quality)
+##### Option C: Replicate (Best Quality - Paid)
 
 ```env
 REPLICATE_API_TOKEN=r8_your_token_here
@@ -133,19 +145,6 @@ REPLICATE_API_TOKEN=r8_your_token_here
 3. Create a new token
 
 **Cost:** ~$0.02-0.05 per image
-
-##### Option C: Hugging Face (Free but Unreliable)
-
-```env
-HUGGINGFACE_API_TOKEN=hf_your_token_here
-```
-
-**Get your token:**
-1. Sign up at [huggingface.co](https://huggingface.co)
-2. Go to [Settings → Access Tokens](https://huggingface.co/settings/tokens)
-3. Create a new token with "Read" permission
-
-**Cost:** Free (uses public Spaces, may be slow/unavailable)
 
 #### 3.4 Start the Backend Server
 
@@ -324,7 +323,7 @@ fashion_chrome/
 ### Backend
 - **Server**: FastAPI (Python)
 - **Image Processing**: Pillow
-- **AI Services**: Fal.ai, Replicate, Hugging Face
+- **AI Services**: Kolors (free), Fal.ai, Replicate
 - **HTTP Client**: httpx (async)
 
 ---
@@ -383,6 +382,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
+- [Kolors Virtual Try-On](https://huggingface.co/spaces/Kwai-Kolors/Kolors-Virtual-Try-On) - Free AI try-on
 - [Fal.ai](https://fal.ai) - Fast AI inference
 - [IDM-VTON](https://github.com/yisol/IDM-VTON) - Virtual try-on model
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
