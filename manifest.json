@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "Virtual Try-On",
+  "version": "1.0.0",
+  "description": "Virtually try on clothing from any e-commerce website",
+  "icons": {
+    "16": "assets/icon512.png",
+    "32": "assets/icon512.png",
+    "48": "assets/icon512.png",
+    "128": "assets/icon512.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon512.png",
+      "32": "assets/icon512.png",
+      "48": "assets/icon512.png",
+      "128": "assets/icon512.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.amazon.com/*",
+    "https://*.asos.com/*",
+    "https://*.zara.com/*",
+    "https://*.hm.com/*",
+    "https://*.nordstrom.com/*",
+    "https://*.shopify.com/*",
+    "https://*.lululemon.com/*",
+    "https://*.gap.com/*",
+    "https://*.uniqlo.com/*",
+    "https://*.nike.com/*",
+    "https://*.adidas.com/*",
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.amazon.com/*",
+        "https://*.asos.com/*",
+        "https://*.zara.com/*",
+        "https://*.hm.com/*",
+        "https://*.nordstrom.com/*",
+        "https://*.lululemon.com/*",
+        "https://*.gap.com/*",
+        "https://*.uniqlo.com/*",
+        "https://*.nike.com/*",
+        "https://*.adidas.com/*",
+        "https://*/*"
+      ],
+      "js": ["src/content/product-detector.ts"]
+    }
+  ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  }
+}

@@ -1,0 +1,33 @@
+# Virtual Try-On Backend Configuration
+# Copy this file to .env and fill in your values
+
+# ===========================================
+# AI BACKEND OPTIONS (configure at least one)
+# ===========================================
+
+# Option 1: Fal.ai (RECOMMENDED - fast, cheap ~$0.01/image)
+# Get your key at: https://fal.ai/dashboard/keys
+# FAL_KEY=your_fal_key_here
+
+# Option 2: Replicate API (Best quality, ~$0.02/image)
+# Get your token at: https://replicate.com/account/api-tokens
+# REPLICATE_API_TOKEN=r8_your_token_here
+
+# Option 3: Hugging Face API (Free but unreliable)
+# Get your token at: https://huggingface.co/settings/tokens
+# HUGGINGFACE_API_TOKEN=hf_your_token_here
+
+# ===========================================
+# SERVER CONFIG
+# ===========================================
+
+# Server port
+PORT=8000
+
+# Optional: Redis URL for caching
+# REDIS_URL=redis://localhost:6379
+
+# Optional: AWS S3 for image storage
+# AWS_ACCESS_KEY_ID=your_key
+# AWS_SECRET_ACCESS_KEY=your_secret
+# S3_BUCKET_NAME=your-bucket

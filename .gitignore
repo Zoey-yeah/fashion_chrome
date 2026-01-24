@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+backend/venv/
+
+# Build outputs
+dist/
+build/
+
+# Plasmo cache and generated files
+.plasmo/
+.parcel-cache/
+
+# Environment files (contain secrets!)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.local
+.cache/
+
+# Duplicated config files
+postcss.config 2.js
