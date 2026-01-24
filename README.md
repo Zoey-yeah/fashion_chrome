@@ -1,202 +1,394 @@
 # 👗 Virtual Try-On Chrome Extension
 
-See yourself wearing any clothes while shopping online! Upload your photo once, then virtually try on items from your favorite stores.
+A Chrome extension that lets you virtually try on clothes while shopping online. Upload your photo once, then see yourself wearing any garment from supported e-commerce websites using AI-powered virtual try-on technology.
 
-![Virtual Try-On Demo](https://via.placeholder.com/800x400?text=See+Yourself+In+Any+Outfit)
+![Virtual Try-On Demo](assets/demo.png)
 
-## ✨ What It Does
+## ✨ Features
 
-- 📸 Upload your photo once, use it everywhere
-- 🛍️ Automatically detects clothes on shopping websites
-- 🪄 AI generates realistic images of you wearing the clothes
-- 📏 Get size recommendations based on your measurements
-- 🎨 Choose from 6 beautiful color themes
+- 🖼️ **AI-Powered Try-On** - See realistic previews of yourself wearing clothes
+- 🎨 **6 Artistic Themes** - Customize your experience with beautiful color themes
+- 📏 **Size Recommendations** - Get size suggestions based on your measurements
+- 🔍 **Auto Product Detection** - Automatically detects clothing on supported sites
+- 💾 **Persistent Storage** - Your profile, measurements, and history are saved
+- ⚡ **Fast Mode** - Optimized for speed (~10-15 seconds per generation)
 
-## 🛒 Works On These Sites
+## 🛍️ Supported Sites
 
-Lululemon, Amazon, ASOS, Zara, H&M, Nordstrom, Nike, Uniqlo, and more!
-
----
-
-# 🚀 Easy Installation (5 minutes)
-
-## What You Need First
-
-Before installing, make sure you have:
-
-1. **Google Chrome** browser
-2. **Node.js** - [Download here](https://nodejs.org/) (click the big green LTS button)
-3. **Python** - [Download here](https://www.python.org/downloads/) (click the yellow Download button)
-
-> 💡 **Windows users:** When installing Python, make sure to check ✅ "Add Python to PATH"
+| Site | Status |
+|------|--------|
+| Lululemon | ✅ Full support |
+| Amazon | ✅ Full support |
+| ASOS | ✅ Full support |
+| Zara | ✅ Full support |
+| H&M | ✅ Full support |
+| Nordstrom | ✅ Full support |
+| Nike | ✅ Full support |
+| Uniqlo | ✅ Full support |
+| Other sites | 🔄 Generic detection |
 
 ---
 
-## Step 1: Download This Project
+## 🚀 Deployment Guide
 
-**Option A: Download ZIP** (easiest)
-1. Click the green **Code** button above
-2. Click **Download ZIP**
-3. Extract the ZIP file to your Desktop or Documents folder
+### Prerequisites
 
-**Option B: Using Git** (if you have it)
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
+- **Python** (v3.9 or higher) - [Download](https://www.python.org/)
+- **Google Chrome** browser
+- **Git** (optional, for cloning)
+
+### Step 1: Clone or Download the Project
+
 ```bash
-git clone https://github.com/Zoey-yeah/fashion_chrome.git
+git clone https://github.com/your-username/fashion_chrome.git
+cd fashion_chrome
 ```
 
----
+Or download and extract the ZIP file.
 
-## Step 2: Run the Installer
+### Step 2: Install Chrome Extension
 
-### On Mac/Linux:
+#### 2.1 Install Node Dependencies
 
-1. Open **Terminal**
-2. Navigate to the project folder:
-   ```bash
-   cd ~/Desktop/fashion_chrome   # or wherever you extracted it
-   ```
-3. Run the installer:
-   ```bash
-   chmod +x install.sh
-   ./install.sh
-   ```
-
-### On Windows:
-
-1. Open the project folder
-2. Double-click **`install.bat`**
-
-The installer will:
-- ✅ Check if Node.js and Python are installed
-- ✅ Install all required packages
-- ✅ Build the extension
-- ✅ Help you set up your AI key (optional)
-
----
-
-## Step 3: Add to Chrome
-
-1. Open **Google Chrome**
-2. Type `chrome://extensions` in the address bar and press Enter
-3. Turn ON **Developer mode** (toggle in the top-right corner)
-4. Click **Load unpacked**
-5. Select the **`dist`** folder inside the project
-
-You should see the extension icon appear in your toolbar! 🎉
-
----
-
-## Step 4: Start the Server
-
-The server needs to run in the background for AI try-on to work.
-
-### On Mac/Linux:
 ```bash
-./start-server.sh
+npm install
 ```
 
-### On Windows:
-Double-click **`start-server.bat`**
+#### 2.2 Build the Extension
 
-> 💡 Keep this window open while using the extension. You can minimize it.
-
----
-
-## Step 5: Try It Out!
-
-1. Go to [lululemon.com](https://shop.lululemon.com) or any supported store
-2. Click the extension icon in Chrome
-3. Upload a full-body photo of yourself
-4. Browse products - they'll be detected automatically
-5. Click **Try On** to see yourself in the outfit!
-
----
-
-# 🔑 Setting Up AI (Optional but Recommended)
-
-Without an AI key, you'll only see a preview overlay. With AI, you get realistic try-on images!
-
-### Get a Fal.ai Key (Recommended)
-
-1. Go to [fal.ai](https://fal.ai) and sign up
-2. Go to **Dashboard** → **Keys**
-3. Click **Create Key**
-4. Go to **Billing** and add payment info (pay only for what you use, ~$0.01/image)
-5. Copy your key
-
-### Add the Key
-
-Create a file called `.env` in the `backend` folder with this content:
-```
-FAL_KEY=your_key_here
+```bash
+npm run build
 ```
 
-Or re-run the installer and enter your key when prompted.
+This creates a `dist` folder with the built extension.
+
+#### 2.3 Load in Chrome
+
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable **Developer mode** (toggle in top-right corner)
+3. Click **Load unpacked**
+4. Select the `dist` folder from your project directory
+5. The extension icon should appear in your toolbar! 🎉
+
+### Step 3: Set Up the Backend Server
+
+The backend is required for AI-powered try-on. Without it, the extension will use a basic preview mode.
+
+#### 3.1 Create Python Virtual Environment
+
+```bash
+cd backend
+python -m venv venv
+
+# Activate the virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+
+# On Windows:
+venv\Scripts\activate
+```
+
+#### 3.2 Install Python Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+#### 3.3 Configure AI Service (Choose One)
+
+Create a `.env` file in the `backend` folder:
+
+```bash
+touch .env  # On Windows: type nul > .env
+```
+
+Add your API key(s) to the `.env` file:
+
+##### Option A: Fal.ai (Recommended - Fast & Affordable)
+
+```env
+FAL_KEY=your_fal_api_key_here
+```
+
+**Get your key:**
+1. Sign up at [fal.ai](https://fal.ai)
+2. Go to [Dashboard → Keys](https://fal.ai/dashboard/keys)
+3. Create a new key
+4. Add billing info at [Billing](https://fal.ai/dashboard/billing)
+
+**Cost:** ~$0.01-0.02 per image
+
+##### Option B: Replicate (Best Quality)
+
+```env
+REPLICATE_API_TOKEN=r8_your_token_here
+```
+
+**Get your token:**
+1. Sign up at [replicate.com](https://replicate.com)
+2. Go to [Account → API Tokens](https://replicate.com/account/api-tokens)
+3. Create a new token
+
+**Cost:** ~$0.02-0.05 per image
+
+##### Option C: Hugging Face (Free but Unreliable)
+
+```env
+HUGGINGFACE_API_TOKEN=hf_your_token_here
+```
+
+**Get your token:**
+1. Sign up at [huggingface.co](https://huggingface.co)
+2. Go to [Settings → Access Tokens](https://huggingface.co/settings/tokens)
+3. Create a new token with "Read" permission
+
+**Cost:** Free (uses public Spaces, may be slow/unavailable)
+
+#### 3.4 Start the Backend Server
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+You should see:
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO:     [TryOn] AI backends: Replicate=False, Fal=True, HuggingFace=False
+```
+
+#### 3.5 Verify Backend is Running
+
+Open a new terminal and run:
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "ai_enabled": true,
+  "fal_configured": true
+}
+```
+
+### Step 4: Using the Extension
+
+1. **Open Chrome** and navigate to a supported clothing website (e.g., lululemon.com)
+2. **Click the extension icon** in your toolbar
+3. **Complete onboarding:**
+   - Upload a full-body photo (front-facing, form-fitting clothes work best)
+   - Optionally enter your measurements for size recommendations
+4. **Browse products** - the extension will auto-detect clothing items
+5. **Click "Try On"** to see yourself wearing the item!
 
 ---
 
-# 🎨 Customize Your Theme
+## 🐳 Alternative: Docker Deployment
 
-Open the extension and go to **Settings** to choose from 6 color themes:
+If you prefer Docker:
 
-| Theme | Look |
-|-------|------|
-| Champagne Gold | Luxurious gold & burgundy |
-| Midnight Rose | Purple & rose gold |
-| Ocean Dusk | Teal & coral sunset |
-| Autumn Ember | Warm orange & forest green |
-| Tokyo Night | Neon pink & blue |
-| Sage & Blush | Earthy green & soft pink |
+```bash
+cd backend
 
----
+# Build and run
+docker-compose up --build
 
-# ❓ Troubleshooting
-
-### "No items detected" on a clothing page
-
-- Make sure the page fully loaded
-- Try scrolling down to load images
-- Refresh the page and try again
-
-### Extension not working
-
-- Make sure the server is running (Step 4)
-- Check that Developer mode is ON in chrome://extensions
-- Try removing and re-loading the extension
-
-### AI try-on not working
-
-- Check your API key is correct in `backend/.env`
-- Make sure the server window shows "AI mode enabled"
-- Check you have billing set up on fal.ai
-
-### Server won't start
-
-- Make sure Python is installed (`python --version` in terminal)
-- Try running `pip install -r requirements.txt` in the backend folder
+# Or without docker-compose:
+docker build -t tryon-api .
+docker run -p 8000:8000 \
+  -e FAL_KEY=your_key_here \
+  tryon-api
+```
 
 ---
 
-# 📱 Quick Reference
+## 🎨 Color Themes
 
-| Task | Command |
-|------|---------|
-| Install everything | `./install.sh` (Mac) or `install.bat` (Windows) |
-| Start server | `./start-server.sh` (Mac) or `start-server.bat` (Windows) |
-| Rebuild extension | `npm run build` |
-| Load in Chrome | chrome://extensions → Load unpacked → select `dist` folder |
+The extension includes 6 artistic color themes:
+
+| Theme | Description |
+|-------|-------------|
+| **Champagne Gold** | Luxe fashion palette (default) |
+| **Midnight Rose** | Deep purples & rose gold |
+| **Ocean Dusk** | Teal meets warm coral |
+| **Autumn Ember** | Warm rusts & forest greens |
+| **Tokyo Night** | Neon pink on indigo |
+| **Sage & Blush** | Earthy green & soft pink |
+
+Change themes in **Settings** → **Color Theme**
 
 ---
 
-# 🙏 Credits
+## ⚡ Performance Tips
 
-- AI powered by [Fal.ai](https://fal.ai)
-- Virtual try-on model: [IDM-VTON](https://github.com/yisol/IDM-VTON)
+### For Faster Generation
+
+1. **Use smaller photos** - Photos are auto-compressed, but starting small helps
+2. **Good lighting** - Clear, well-lit photos process faster
+3. **Simple backgrounds** - Solid backgrounds work best
+4. **Fast mode is ON by default** - Uses fewer AI steps for speed
+
+### Typical Generation Times
+
+| Mode | Time |
+|------|------|
+| Fast Mode (default) | 8-15 seconds |
+| Quality Mode | 15-25 seconds |
+| Preview Only (no AI) | Instant |
 
 ---
 
-<p align="center">
-  Made with ❤️ for online shoppers everywhere
-  <br>
-  <a href="https://github.com/Zoey-yeah/fashion_chrome">⭐ Star this project</a> if you find it useful!
-</p>
+## 🔧 Troubleshooting
+
+### Extension not detecting products?
+
+1. **Refresh the page** after installing the extension
+2. **Check permissions** - The extension needs access to the website
+3. **Supported site?** - Check if the site is in our supported list
+4. **Console errors** - Right-click extension icon → Inspect → Console
+
+### Backend not starting?
+
+```bash
+# Check if port 8000 is in use
+lsof -i :8000  # macOS/Linux
+netstat -ano | findstr :8000  # Windows
+
+# Try a different port
+uvicorn app.main:app --reload --port 8001
+```
+
+### AI generation failing?
+
+1. **Check your API key** - Verify it's correctly set in `.env`
+2. **Check billing** - Most AI services require payment info
+3. **Check backend logs** - Look for error messages in the terminal
+4. **Test the health endpoint:**
+   ```bash
+   curl http://localhost:8000/health
+   ```
+
+### "No items detected" on a clothing page?
+
+1. Wait for the page to fully load
+2. Scroll down to load product images
+3. Try refreshing and clicking the extension again
+
+---
+
+## 📁 Project Structure
+
+```
+fashion_chrome/
+├── src/
+│   ├── popup/
+│   │   ├── main.tsx          # React entry point
+│   │   └── Popup.tsx         # Main UI component
+│   ├── background/
+│   │   └── index.ts          # Service worker
+│   ├── content/
+│   │   └── product-detector.ts  # Detects products on pages
+│   └── styles/
+│       └── globals.css       # Tailwind + theme CSS
+├── backend/
+│   ├── app/
+│   │   └── main.py           # FastAPI server
+│   ├── requirements.txt      # Python dependencies
+│   ├── Dockerfile
+│   └── .env                  # API keys (create this)
+├── dist/                     # Built extension (after npm run build)
+├── assets/
+│   └── icon512.png           # Extension icon
+├── manifest.json             # Extension manifest
+├── package.json              # Node dependencies
+├── vite.config.ts            # Build configuration
+└── tailwind.config.js        # Tailwind configuration
+```
+
+---
+
+## 🛠️ Tech Stack
+
+### Chrome Extension
+- **Build**: Vite + @crxjs/vite-plugin
+- **UI**: React 18 + TypeScript
+- **Styling**: Tailwind CSS with custom themes
+- **Animation**: Framer Motion
+- **Icons**: Lucide React
+- **Storage**: Chrome Storage API
+
+### Backend
+- **Server**: FastAPI (Python)
+- **Image Processing**: Pillow
+- **AI Services**: Fal.ai, Replicate, Hugging Face
+- **HTTP Client**: httpx (async)
+
+---
+
+## 🔒 Privacy
+
+- Photos are **only sent to the AI service** for try-on generation
+- Profile data is stored **locally in your browser**
+- No data is shared with third parties beyond AI processing
+- You can delete all data anytime from the extension settings
+
+---
+
+## 📝 Development
+
+### Run in Development Mode
+
+```bash
+# Terminal 1: Extension (with hot reload)
+npm run dev
+
+# Terminal 2: Backend
+cd backend && source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+```
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Type Checking
+
+```bash
+npm run typecheck
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- [Fal.ai](https://fal.ai) - Fast AI inference
+- [IDM-VTON](https://github.com/yisol/IDM-VTON) - Virtual try-on model
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Framer Motion](https://www.framer.com/motion/) - Animations
+- [Lucide Icons](https://lucide.dev/) - Icons
+
+---
+
+<p align="center">Made with ❤️ for online shoppers everywhere</p>
