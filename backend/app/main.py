@@ -34,13 +34,13 @@ HUGGINGFACE_API_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKE
 FAL_API_KEY = os.getenv("FAL_KEY") or os.getenv("FAL_API_KEY")
 
 USE_REPLICATE = bool(REPLICATE_API_TOKEN)
-USE_HUGGINGFACE = bool(HUGGINGFACE_API_TOKEN)
+USE_HUGGINGFACE = True  # Kolors is free and doesn't require a token
 USE_FAL = bool(FAL_API_KEY)
 
 if USE_REPLICATE:
     import replicate
 
-print(f"[TryOn] AI backends: Replicate={USE_REPLICATE}, Fal={USE_FAL}, HuggingFace={USE_HUGGINGFACE}")
+print(f"[TryOn] AI backends: Replicate={USE_REPLICATE}, Fal={USE_FAL}, HuggingFace(Kolors)={USE_HUGGINGFACE}")
 
 app = FastAPI(
     title="Virtual Try-On API",
@@ -111,6 +111,7 @@ class HealthResponse(BaseModel):
     replicate_configured: bool
     fal_configured: bool
     huggingface_configured: bool
+    kolors_available: bool = True  # Kolors is always available (free)
 
 
 # ============================================================================
@@ -384,11 +385,8 @@ async def generate_tryon_huggingface(
 ) -> Image.Image:
     """
     Generate virtual try-on using Hugging Face Spaces via Gradio Client.
-    More reliable than direct API calls.
+    Tries Kolors Virtual Try-On first (free, good quality), then IDM-VTON as fallback.
     """
-    if not USE_HUGGINGFACE:
-        raise ValueError("Hugging Face API token not configured")
-    
     from gradio_client import Client, handle_file
     import tempfile
     import asyncio
@@ -405,17 +403,58 @@ async def generate_tryon_huggingface(
         garment_path = garment_file.name
     
     try:
-        # Try IDM-VTON Space (most reliable for virtual try-on)
-        print("[TryOn] Connecting to IDM-VTON Gradio Space...")
+        # Try Kolors Virtual Try-On first (free, no GPU quota limits)
+        print("[TryOn] Connecting to Kolors Virtual Try-On Space...")
         
-        def run_gradio_prediction():
+        def run_kolors_prediction():
+            try:
+                client = Client("Kwai-Kolors/Kolors-Virtual-Try-On")
+                
+                result = client.predict(
+                    person_img=handle_file(user_path),
+                    garment_img=handle_file(garment_path),
+                    seed=42,
+                    randomize_seed=False,
+                    api_name="/tryon"
+                )
+                
+                return ("kolors", result)
+            except Exception as e:
+                print(f"[TryOn] Kolors Gradio error: {e}")
+                return None
+        
+        # Run in thread pool to not block async
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, run_kolors_prediction)
+        
+        if result and result[0] == "kolors":
+            kolors_result = result[1]
+            print(f"[TryOn] Kolors result type: {type(kolors_result)}")
+            
+            # Handle Kolors result format
+            if isinstance(kolors_result, tuple) and len(kolors_result) > 0:
+                result_item = kolors_result[0]
+                if isinstance(result_item, str) and os.path.exists(result_item):
+                    print("[TryOn] Kolors generation successful!")
+                    return Image.open(result_item)
+                elif isinstance(result_item, dict) and 'path' in result_item:
+                    print("[TryOn] Kolors generation successful!")
+                    return Image.open(result_item['path'])
+            elif isinstance(kolors_result, str) and os.path.exists(kolors_result):
+                print("[TryOn] Kolors generation successful!")
+                return Image.open(kolors_result)
+            elif isinstance(kolors_result, dict) and 'path' in kolors_result:
+                print("[TryOn] Kolors generation successful!")
+                return Image.open(kolors_result['path'])
+            
+            print(f"[TryOn] Unexpected Kolors result format: {kolors_result}")
+        
+        # Fallback to IDM-VTON Space
+        print("[TryOn] Trying IDM-VTON as fallback...")
+        
+        def run_idm_vton_prediction():
             try:
                 client = Client("yisol/IDM-VTON", hf_token=HUGGINGFACE_API_TOKEN)
-                
-                # Determine category based on garment type
-                is_upper = garment_type in ["top", "shirt", "sweater", "cardigan", "jacket"]
-                is_lower = garment_type in ["pants", "jeans", "shorts", "skirt"]
-                is_dress = garment_type == "dress"
                 
                 result = client.predict(
                     dict={"background": handle_file(user_path), "layers": [], "composite": None},
@@ -433,9 +472,7 @@ async def generate_tryon_huggingface(
                 print(f"[TryOn] IDM-VTON Gradio error: {e}")
                 return None
         
-        # Run in thread pool to not block async
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, run_gradio_prediction)
+        result = await loop.run_in_executor(None, run_idm_vton_prediction)
         
         if result:
             print(f"[TryOn] IDM-VTON result type: {type(result)}")
@@ -741,7 +778,22 @@ async def generate_tryon(request: TryOnRequest):
         method = "composite"
         result_image = None
         
-        # Try Fal.ai first (fast and cheap)
+        # Try Hugging Face (Kolors) first - FREE and reliable
+        if USE_HUGGINGFACE and result_image is None:
+            try:
+                print("[TryOn] Attempting Hugging Face (Kolors) AI generation...")
+                result_image = await generate_tryon_huggingface(
+                    user_photo=user_photo,
+                    garment_image=garment_image,
+                    garment_type=request.garment_type
+                )
+                method = "ai-kolors"
+                elapsed = time.time() - start_time
+                print(f"[TryOn] Hugging Face (Kolors) generation successful! ({elapsed:.1f}s)")
+            except Exception as e:
+                print(f"[TryOn] Hugging Face failed: {e}")
+        
+        # Try Fal.ai as second option (fast, paid)
         if USE_FAL and result_image is None:
             try:
                 print("[TryOn] Attempting Fal.ai AI generation...")
@@ -757,7 +809,7 @@ async def generate_tryon(request: TryOnRequest):
             except Exception as e:
                 print(f"[TryOn] Fal.ai failed: {e}")
         
-        # Try Replicate as second option (best quality)
+        # Try Replicate as third option (best quality, paid)
         if USE_REPLICATE and result_image is None:
             try:
                 print("[TryOn] Attempting Replicate AI generation...")
@@ -770,20 +822,6 @@ async def generate_tryon(request: TryOnRequest):
                 print("[TryOn] Replicate generation successful!")
             except Exception as e:
                 print(f"[TryOn] Replicate failed: {e}")
-        
-        # Try Hugging Face as last resort (free but unreliable)
-        if USE_HUGGINGFACE and result_image is None:
-            try:
-                print("[TryOn] Attempting Hugging Face AI generation...")
-                result_image = await generate_tryon_huggingface(
-                    user_photo=user_photo,
-                    garment_image=garment_image,
-                    garment_type=request.garment_type
-                )
-                method = "ai-huggingface"
-                print("[TryOn] Hugging Face generation successful!")
-            except Exception as e:
-                print(f"[TryOn] Hugging Face failed: {e}")
         
         # Fall back to composite if no AI available
         if result_image is None:
