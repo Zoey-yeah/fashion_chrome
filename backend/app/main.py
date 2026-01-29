@@ -87,6 +87,7 @@ class TryOnRequest(BaseModel):
     measurements: Optional[Measurements] = None
     garment_type: str = Field("top", alias="garmentType")
     fast_mode: bool = Field(True, alias="fastMode", description="Use fast mode (smaller images, fewer steps)")
+    ai_mode: str = Field("paid", alias="aiMode", description="AI mode: 'free' (Kolors) or 'paid' (Fal.ai)")
 
     class Config:
         populate_by_name = True
@@ -749,7 +750,9 @@ async def generate_tryon(request: TryOnRequest):
     """
     Generate a virtual try-on image.
     
-    Uses Fal.ai/Replicate AI if configured, otherwise falls back to composite overlay.
+    AI Mode:
+      - 'free': Uses Kolors (Hugging Face) - slower but free
+      - 'paid': Uses Fal.ai - faster but costs ~$0.01/image
     
     fast_mode (default: true):
       - Smaller image sizes (512px vs 768px)
@@ -758,6 +761,7 @@ async def generate_tryon(request: TryOnRequest):
     """
     start_time = time.time()
     fast = request.fast_mode
+    ai_mode = request.ai_mode  # 'free' or 'paid'
     
     try:
         # Decode user photo
@@ -772,56 +776,94 @@ async def generate_tryon(request: TryOnRequest):
         
         garment_image = preprocess_image(garment_image, (768, 768), fast_mode=fast)
         
-        print(f"[TryOn] Processing with fast_mode={fast}, user_img={user_photo.size}, garment_img={garment_image.size}")
+        print(f"[TryOn] Processing with ai_mode={ai_mode}, fast_mode={fast}, user_img={user_photo.size}, garment_img={garment_image.size}")
         
         # Try AI generation first, fall back to composite
         method = "composite"
         result_image = None
         
-        # Try Fal.ai first (fast and reliable, paid)
-        if USE_FAL and result_image is None:
-            try:
-                print("[TryOn] Attempting Fal.ai AI generation...")
-                result_image = await generate_tryon_fal(
-                    user_photo=user_photo,
-                    garment_image=garment_image,
-                    garment_type=request.garment_type,
-                    fast_mode=fast
-                )
-                method = "ai-fal"
-                elapsed = time.time() - start_time
-                print(f"[TryOn] Fal.ai generation successful! ({elapsed:.1f}s)")
-            except Exception as e:
-                print(f"[TryOn] Fal.ai failed: {e}")
+        # Route based on AI mode preference
+        if ai_mode == "free":
+            # FREE mode: Try Kolors first, then fall back to paid options
+            
+            # 1. Try Hugging Face (Kolors) - FREE
+            if USE_HUGGINGFACE and result_image is None:
+                try:
+                    print("[TryOn] 🆓 Attempting Hugging Face (Kolors) - FREE...")
+                    result_image = await generate_tryon_huggingface(
+                        user_photo=user_photo,
+                        garment_image=garment_image,
+                        garment_type=request.garment_type
+                    )
+                    method = "ai-kolors"
+                    elapsed = time.time() - start_time
+                    print(f"[TryOn] Kolors generation successful! ({elapsed:.1f}s)")
+                except Exception as e:
+                    print(f"[TryOn] Kolors failed: {e}")
+            
+            # 2. Fall back to Fal.ai if Kolors fails
+            if USE_FAL and result_image is None:
+                try:
+                    print("[TryOn] ⚡ Falling back to Fal.ai...")
+                    result_image = await generate_tryon_fal(
+                        user_photo=user_photo,
+                        garment_image=garment_image,
+                        garment_type=request.garment_type,
+                        fast_mode=fast
+                    )
+                    method = "ai-fal"
+                    elapsed = time.time() - start_time
+                    print(f"[TryOn] Fal.ai generation successful! ({elapsed:.1f}s)")
+                except Exception as e:
+                    print(f"[TryOn] Fal.ai failed: {e}")
         
-        # Try Replicate as second option (best quality, paid)
-        if USE_REPLICATE and result_image is None:
-            try:
-                print("[TryOn] Attempting Replicate AI generation...")
-                result_image = await generate_tryon_replicate(
-                    user_photo=user_photo,
-                    garment_image=garment_image,
-                    garment_type=request.garment_type
-                )
-                method = "ai-replicate"
-                print("[TryOn] Replicate generation successful!")
-            except Exception as e:
-                print(f"[TryOn] Replicate failed: {e}")
-        
-        # Try Hugging Face (Kolors) as fallback - FREE but slower
-        if USE_HUGGINGFACE and result_image is None:
-            try:
-                print("[TryOn] Attempting Hugging Face (Kolors) AI generation...")
-                result_image = await generate_tryon_huggingface(
-                    user_photo=user_photo,
-                    garment_image=garment_image,
-                    garment_type=request.garment_type
-                )
-                method = "ai-kolors"
-                elapsed = time.time() - start_time
-                print(f"[TryOn] Hugging Face (Kolors) generation successful! ({elapsed:.1f}s)")
-            except Exception as e:
-                print(f"[TryOn] Hugging Face failed: {e}")
+        else:
+            # PAID mode: Try Fal.ai first (fast), then Replicate (quality), then Kolors (free fallback)
+            
+            # 1. Try Fal.ai first (fast and reliable, paid)
+            if USE_FAL and result_image is None:
+                try:
+                    print("[TryOn] ⚡ Attempting Fal.ai - FAST (~15s)...")
+                    result_image = await generate_tryon_fal(
+                        user_photo=user_photo,
+                        garment_image=garment_image,
+                        garment_type=request.garment_type,
+                        fast_mode=fast
+                    )
+                    method = "ai-fal"
+                    elapsed = time.time() - start_time
+                    print(f"[TryOn] Fal.ai generation successful! ({elapsed:.1f}s)")
+                except Exception as e:
+                    print(f"[TryOn] Fal.ai failed: {e}")
+            
+            # 2. Try Replicate as second option (best quality, paid)
+            if USE_REPLICATE and result_image is None:
+                try:
+                    print("[TryOn] 🎨 Attempting Replicate - HIGH QUALITY...")
+                    result_image = await generate_tryon_replicate(
+                        user_photo=user_photo,
+                        garment_image=garment_image,
+                        garment_type=request.garment_type
+                    )
+                    method = "ai-replicate"
+                    print("[TryOn] Replicate generation successful!")
+                except Exception as e:
+                    print(f"[TryOn] Replicate failed: {e}")
+            
+            # 3. Fall back to Kolors if paid options fail
+            if USE_HUGGINGFACE and result_image is None:
+                try:
+                    print("[TryOn] 🆓 Falling back to Kolors (free)...")
+                    result_image = await generate_tryon_huggingface(
+                        user_photo=user_photo,
+                        garment_image=garment_image,
+                        garment_type=request.garment_type
+                    )
+                    method = "ai-kolors"
+                    elapsed = time.time() - start_time
+                    print(f"[TryOn] Kolors generation successful! ({elapsed:.1f}s)")
+                except Exception as e:
+                    print(f"[TryOn] Kolors failed: {e}")
         
         # Fall back to composite if no AI available
         if result_image is None:

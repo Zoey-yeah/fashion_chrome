@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Shirt, Scan, History, Settings, User, Sparkles, ChevronRight, ChevronLeft,
   Camera, Ruler, CheckCircle2, Upload, Check, X, RotateCcw, Heart, Download,
-  Share2, ExternalLink, Package, ZoomIn, Loader2, AlertCircle, Trash2, Clock, Mail, Info
+  Share2, ExternalLink, Package, ZoomIn, Loader2, AlertCircle, Trash2, Clock, Mail, Info, Zap
 } from 'lucide-react'
 
 // Types
@@ -104,6 +104,7 @@ const api = {
     measurements: UserMeasurements
     garmentType: string
     fastMode?: boolean
+    aiMode?: 'free' | 'paid'  // free = Kolors, paid = Fal.ai
   }): Promise<{ success: boolean; resultImage?: string; error?: string; method?: string }> {
     const response = await fetch(`${API_BASE_URL}/api/tryon/generate`, {
       method: 'POST',
@@ -111,7 +112,8 @@ const api = {
       body: JSON.stringify({
         userPhoto: params.userPhoto,
         productImage: params.productImage,
-        fastMode: params.fastMode ?? true, // Default to fast mode
+        fastMode: params.fastMode ?? true,
+        aiMode: params.aiMode ?? 'paid',  // Default to paid (Fal.ai)
         measurements: params.measurements,
         garmentType: params.garmentType
       })
@@ -142,10 +144,13 @@ const THEMES: ThemeOption[] = [
   { id: 'sage-blush', name: 'Sage & Blush', description: 'Earthy green & soft pink', colors: { primary: '#a7c4bc', secondary: '#e8b4bc', tertiary: '#d4a373', bg: '#181d1a' } },
 ]
 
+type AiMode = 'free' | 'paid'  // free = Kolors (slow but free), paid = Fal.ai (fast)
+
 interface StorageData {
   userProfile: UserProfile | null
   tryOnHistory: TryOnResult[]
   theme?: ThemeId
+  aiMode?: AiMode
 }
 
 const loadFromStorage = async (): Promise<StorageData> => {
@@ -153,15 +158,15 @@ const loadFromStorage = async (): Promise<StorageData> => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
       chrome.storage.local.get([STORAGE_KEY], (result) => {
         const data = result[STORAGE_KEY]
-        resolve(data || { userProfile: null, tryOnHistory: [], theme: 'champagne-gold' })
+        resolve(data || { userProfile: null, tryOnHistory: [], theme: 'champagne-gold', aiMode: 'paid' })
       })
     } else {
       // Fallback to localStorage for development
       try {
         const stored = localStorage.getItem(STORAGE_KEY)
-        resolve(stored ? JSON.parse(stored) : { userProfile: null, tryOnHistory: [], theme: 'champagne-gold' })
+        resolve(stored ? JSON.parse(stored) : { userProfile: null, tryOnHistory: [], theme: 'champagne-gold', aiMode: 'paid' })
       } catch {
-        resolve({ userProfile: null, tryOnHistory: [], theme: 'champagne-gold' })
+        resolve({ userProfile: null, tryOnHistory: [], theme: 'champagne-gold', aiMode: 'paid' })
       }
     }
   })
@@ -341,6 +346,7 @@ export default function Popup() {
   const [generationProgress, setGenerationProgress] = useState(0)
   const [isDetecting, setIsDetecting] = useState(true)
   const [currentTheme, setCurrentTheme] = useState<ThemeId>('champagne-gold')
+  const [aiMode, setAiMode] = useState<AiMode>('paid')  // 'free' = Kolors, 'paid' = Fal.ai
 
   const [isLoading, setIsLoading] = useState(true)
 
@@ -388,13 +394,16 @@ export default function Popup() {
   useEffect(() => {
     const init = async () => {
       try {
-        const { userProfile: stored, tryOnHistory: history, theme } = await loadFromStorage()
+        const { userProfile: stored, tryOnHistory: history, theme, aiMode: savedAiMode } = await loadFromStorage()
         console.log('[TryOn] Loaded profile from storage:', stored ? 'found' : 'not found')
         
         // Apply saved theme
         const savedTheme = theme || 'champagne-gold'
         setCurrentTheme(savedTheme)
         applyTheme(savedTheme)
+        
+        // Apply saved AI mode
+        setAiMode(savedAiMode || 'paid')
         
         if (stored) {
           setUserProfile(stored)
@@ -415,12 +424,12 @@ export default function Popup() {
     init()
   }, [])
 
-  // Save profile and theme whenever they change
+  // Save profile, theme, and AI mode whenever they change
   useEffect(() => {
     if (!isLoading) {
-      saveToStorage({ userProfile, tryOnHistory, theme: currentTheme })
+      saveToStorage({ userProfile, tryOnHistory, theme: currentTheme, aiMode })
     }
-  }, [userProfile, tryOnHistory, currentTheme, isLoading])
+  }, [userProfile, tryOnHistory, currentTheme, aiMode, isLoading])
 
   // Handle theme change
   const handleThemeChange = (themeId: ThemeId) => {
@@ -452,7 +461,7 @@ export default function Popup() {
       <AnimatePresence mode="wait">
         {currentView === 'onboarding' && <OnboardingView key="onboarding" step={onboardingStep} setStep={setOnboardingStep} userProfile={userProfile} setUserPhoto={setUserPhoto} updateMeasurements={updateMeasurements} onComplete={() => setView('home')} />}
         {currentView === 'home' && <HomeView key="home" userProfile={userProfile} detectedProducts={detectedProducts} isDetecting={isDetecting} setSelectedProduct={setSelectedProduct} setView={setView} />}
-        {currentView === 'try-on' && <TryOnView key="try-on" userProfile={userProfile} selectedProduct={selectedProduct} currentTryOn={currentTryOn} setCurrentTryOn={setCurrentTryOn} isGenerating={isGenerating} setGenerating={setGenerating} generationProgress={generationProgress} setGenerationProgress={setGenerationProgress} setTryOnHistory={setTryOnHistory} toggleFavorite={toggleFavorite} setView={setView} />}
+        {currentView === 'try-on' && <TryOnView key="try-on" userProfile={userProfile} selectedProduct={selectedProduct} currentTryOn={currentTryOn} setCurrentTryOn={setCurrentTryOn} isGenerating={isGenerating} setGenerating={setGenerating} generationProgress={generationProgress} setGenerationProgress={setGenerationProgress} setTryOnHistory={setTryOnHistory} toggleFavorite={toggleFavorite} setView={setView} aiMode={aiMode} setAiMode={setAiMode} />}
         {currentView === 'profile' && <ProfileView key="profile" userProfile={userProfile} setUserPhoto={setUserPhoto} updateMeasurements={updateMeasurements} setView={setView} />}
         {currentView === 'history' && <HistoryView key="history" tryOnHistory={tryOnHistory} setTryOnHistory={setTryOnHistory} setCurrentTryOn={setCurrentTryOn} setSelectedProduct={setSelectedProduct} toggleFavorite={toggleFavorite} setView={setView} />}
         {currentView === 'settings' && <SettingsView key="settings" setView={setView} currentTheme={currentTheme} onThemeChange={handleThemeChange} />}
@@ -858,7 +867,7 @@ async function createTryOnComposite(userPhotoUrl: string, productImageUrl: strin
 }
 
 // Try-On View
-function TryOnView({ userProfile, selectedProduct, currentTryOn, setCurrentTryOn, isGenerating, setGenerating, generationProgress, setGenerationProgress, setTryOnHistory, toggleFavorite, setView }: any) {
+function TryOnView({ userProfile, selectedProduct, currentTryOn, setCurrentTryOn, isGenerating, setGenerating, generationProgress, setGenerationProgress, setTryOnHistory, toggleFavorite, setView, aiMode, setAiMode }: any) {
   const [generationMethod, setGenerationMethod] = useState<'checking' | 'api' | 'local'>('checking')
 
   useEffect(() => {
@@ -886,7 +895,8 @@ function TryOnView({ userProfile, selectedProduct, currentTryOn, setCurrentTryOn
               userPhoto: userProfile.photo,
               productImage: selectedProduct.imageUrl,
               measurements: userProfile.measurements,
-              garmentType: selectedProduct.garmentType
+              garmentType: selectedProduct.garmentType,
+              aiMode: aiMode  // 'free' = Kolors, 'paid' = Fal.ai
             })
 
             clearInterval(interval)
@@ -982,6 +992,39 @@ function TryOnView({ userProfile, selectedProduct, currentTryOn, setCurrentTryOn
           </div>
         </div>
       </header>
+      
+      {/* AI Mode Toggle */}
+      <div className="px-5 pb-3">
+        <div className="flex items-center justify-center gap-1 p-1 bg-noir-800/50 rounded-lg border border-noir-700/50">
+          <button
+            onClick={() => setAiMode('free')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+              aiMode === 'free'
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                : 'text-noir-400 hover:text-noir-200'
+            }`}
+          >
+            <Sparkles className="w-3 h-3" />
+            Free
+            <span className="text-[9px] opacity-70">(~60s)</span>
+          </button>
+          <button
+            onClick={() => setAiMode('paid')}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+              aiMode === 'paid'
+                ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)] border border-[var(--color-primary)]/30'
+                : 'text-noir-400 hover:text-noir-200'
+            }`}
+          >
+            <Zap className="w-3 h-3" />
+            Fast
+            <span className="text-[9px] opacity-70">(~15s)</span>
+          </button>
+        </div>
+        <p className="text-[10px] text-center text-noir-500 mt-1">
+          {aiMode === 'free' ? '🆓 Kolors AI (Hugging Face)' : '⚡ Fal.ai (~$0.01/image)'}
+        </p>
+      </div>
       <div className="flex-1 px-5 pb-5 flex flex-col">
         {isGenerating ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center">
