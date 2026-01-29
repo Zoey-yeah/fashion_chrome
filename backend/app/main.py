@@ -778,22 +778,7 @@ async def generate_tryon(request: TryOnRequest):
         method = "composite"
         result_image = None
         
-        # Try Hugging Face (Kolors) first - FREE and reliable
-        if USE_HUGGINGFACE and result_image is None:
-            try:
-                print("[TryOn] Attempting Hugging Face (Kolors) AI generation...")
-                result_image = await generate_tryon_huggingface(
-                    user_photo=user_photo,
-                    garment_image=garment_image,
-                    garment_type=request.garment_type
-                )
-                method = "ai-kolors"
-                elapsed = time.time() - start_time
-                print(f"[TryOn] Hugging Face (Kolors) generation successful! ({elapsed:.1f}s)")
-            except Exception as e:
-                print(f"[TryOn] Hugging Face failed: {e}")
-        
-        # Try Fal.ai as second option (fast, paid)
+        # Try Fal.ai first (fast and reliable, paid)
         if USE_FAL and result_image is None:
             try:
                 print("[TryOn] Attempting Fal.ai AI generation...")
@@ -809,7 +794,7 @@ async def generate_tryon(request: TryOnRequest):
             except Exception as e:
                 print(f"[TryOn] Fal.ai failed: {e}")
         
-        # Try Replicate as third option (best quality, paid)
+        # Try Replicate as second option (best quality, paid)
         if USE_REPLICATE and result_image is None:
             try:
                 print("[TryOn] Attempting Replicate AI generation...")
@@ -822,6 +807,21 @@ async def generate_tryon(request: TryOnRequest):
                 print("[TryOn] Replicate generation successful!")
             except Exception as e:
                 print(f"[TryOn] Replicate failed: {e}")
+        
+        # Try Hugging Face (Kolors) as fallback - FREE but slower
+        if USE_HUGGINGFACE and result_image is None:
+            try:
+                print("[TryOn] Attempting Hugging Face (Kolors) AI generation...")
+                result_image = await generate_tryon_huggingface(
+                    user_photo=user_photo,
+                    garment_image=garment_image,
+                    garment_type=request.garment_type
+                )
+                method = "ai-kolors"
+                elapsed = time.time() - start_time
+                print(f"[TryOn] Hugging Face (Kolors) generation successful! ({elapsed:.1f}s)")
+            except Exception as e:
+                print(f"[TryOn] Hugging Face failed: {e}")
         
         # Fall back to composite if no AI available
         if result_image is None:
