@@ -2,6 +2,20 @@
 
 const tabProducts = new Map<number, any[]>()
 
+// Open side panel when extension icon is clicked
+chrome.action.onClicked.addListener(async (tab) => {
+  if (tab.id) {
+    try {
+      await chrome.sidePanel.open({ tabId: tab.id })
+    } catch (error) {
+      console.error('[Background] Error opening side panel:', error)
+    }
+  }
+})
+
+// Enable side panel for all tabs
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error)
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PRODUCTS_DETECTED' && sender.tab?.id) {
     console.log('[Background] Products detected:', message.products?.length || 0)

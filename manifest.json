@@ -10,18 +10,22 @@
     "128": "assets/icon512.png"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "assets/icon512.png",
       "32": "assets/icon512.png",
       "48": "assets/icon512.png",
       "128": "assets/icon512.png"
-    }
+    },
+    "default_title": "Open Virtual Try-On"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://*.amazon.com/*",
